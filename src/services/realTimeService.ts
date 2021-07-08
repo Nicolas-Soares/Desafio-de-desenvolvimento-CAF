@@ -1,49 +1,21 @@
 import axios from "axios";
 import { Request, Response } from "express";
-import { CompanyModel } from "../database/schemas/CompanySchema";
 
+import { CompanyModel } from "../database/schemas/CompanySchema";
 import { EmployeeModel } from "../database/schemas/EmployeeSchema";
 import { IEmployee } from "../interfaces/EmployeeInterface";
-
-type CompanyProps = {
-  cnpj: string;
-  razao_social: string;
-  uf: string;
-};
-
-type QSA = {
-  qsa: Array<Object>;
-};
-
-type EmployeeProps = {
-  cnpj: string | null;
-  cpf_cnpj_socio: string | null;
-  nome_socio: string | null;
-  qualificacao_socio: string | null;
-  razao_social: string | null;
-  tipo_socio: string | null;
-};
+import { ICompany } from "../interfaces/CompanyInterface";
+import { CreateEmployee } from "../helpers/createEmployeeHelper";
+import { CompanyProps, QSA } from "../types/generalTypes";
 
 export async function getRealTimeCompanyData(
   req: Request,
   res: Response
 ): Promise<Response> {
-  function CreateEmployee(): EmployeeProps {
-    return {
-      cnpj: null,
-      cpf_cnpj_socio: null,
-      nome_socio: null,
-      qualificacao_socio: null,
-      razao_social: null,
-      tipo_socio: null,
-    };
-  }
-
   const { cnpj } = req.query;
   const CompanyDataURL = `https://api.brasil.io/v1/dataset/socios-brasil/empresas/data/?cnpj=${cnpj}`;
   const CompanyEmployeeURL = `https://api.brasil.io/v1/dataset/socios-brasil/socios/data/?cnpj=${cnpj}`;
 
-  //AXIOS RESPONSES -----
   const CompanyDataResponse = await axios.get(CompanyDataURL, {
     headers: {
       Authorization: process.env.BRASIL_IO_API_AUTH_TOKEN,
@@ -96,9 +68,8 @@ export async function getRealTimeCompanyData(
 
   //   console.log(employee);
   // }
-  
+
   return res.status(200).json({
-    message: "Found on Brasil.io",
     ...EmployeeResult,
   });
 }

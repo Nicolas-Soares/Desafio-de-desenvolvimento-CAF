@@ -2,29 +2,11 @@ import { Request, Response } from "express";
 
 import { CompanyModel } from "../database/schemas/CompanySchema";
 import { EmployeeModel } from "../database/schemas/EmployeeSchema";
-
 import { getRealTimeCompanyData } from "./realTimeService";
+import { QSA } from "../types/generalTypes";
 
-export async function getCachedCompanyData(
-  req: Request,
-  res: Response
-): Promise<any> {
+export async function getCachedCompanyData(req: Request, res: Response): Promise<Response> {
   const { cnpj } = req.query;
-
-  // const result = await Employee.find({})
-
-  // console.log(result)
-  //return res.json(result)
-
-  //   const myEmployee = new Employee({
-  //     cnpj: '***776380**',
-  //     cpf_cnpj_socio: '14367312000142',
-  //     nome_socio: 'PEDRO',
-  //     qualificacao_socio: 'AC',
-  //     razao_social: '1 IGREJA BATISTA DA FLORESTA',
-  //     tipo_socio: 'PJ'
-  // })
-  //   myEmployee.save()
 
   const company = await CompanyModel.findOne({
     cnpj: `${cnpj}`,
@@ -32,13 +14,25 @@ export async function getCachedCompanyData(
   const employee = await EmployeeModel.find({
     cnpj: `${cnpj}`,
   });
-  console.log(company);
+  const employeeResult: QSA = {
+    qsa: [],
+  };
+
+
+  for (let i = 0; i < employee.length; i++) {
+    employeeResult.qsa[i] = employee[i];
+  }
 
   if (!company || !employee) {
     return getRealTimeCompanyData(req, res);
   } else {
+    const FormattedJSONResult = {
+      company,
+      ...employeeResult,
+    };
+
     return res.status(200).json({
-      message: "Found on local database",
+      ...FormattedJSONResult,
     });
   }
 }
