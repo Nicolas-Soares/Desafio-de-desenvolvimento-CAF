@@ -18,7 +18,10 @@ type EmployeeProps = {
   tipo_socio: string | null;
 };
 
-export async function getCompanyData(req: Request,res: Response): Promise<any> {
+export async function getRealTimeCompanyData(
+  req: Request,
+  res: Response
+): Promise<Response> {
   function CreateEmployee(): EmployeeProps {
     return {
       cpf_cnpj_socio: null,
@@ -74,6 +77,6 @@ export async function getCompanyData(req: Request,res: Response): Promise<any> {
     ...CompanyResult,
     ...EmployeeResult,
   };
-
+  
   return res.status(200).json(FormattedJSONResult);
 }
