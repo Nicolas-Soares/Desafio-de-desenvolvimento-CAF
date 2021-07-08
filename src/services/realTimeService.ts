@@ -3,46 +3,44 @@ import { Request, Response } from "express";
 
 import { CompanyModel } from "../database/schemas/CompanySchema";
 import { EmployeeModel } from "../database/schemas/EmployeeSchema";
-import { IEmployee } from "../interfaces/EmployeeInterface";
-import { ICompany } from "../interfaces/CompanyInterface";
 import { CreateEmployee } from "../helpers/createEmployeeHelper";
 import { CompanyProps, QSA } from "../types/generalTypes";
 
-export async function getRealTimeCompanyData(
-  req: Request,
-  res: Response
-): Promise<Response> {
-  const { cnpj } = req.query;
-  const CompanyDataURL = `https://api.brasil.io/v1/dataset/socios-brasil/empresas/data/?cnpj=${cnpj}`;
-  const CompanyEmployeeURL = `https://api.brasil.io/v1/dataset/socios-brasil/socios/data/?cnpj=${cnpj}`;
+export async function getRealTimeCompanyData(req: Request, res: Response): Promise<Response> {
+  const { cnpj }: any = req.query;
+  const companyDataURL = `https://api.brasil.io/v1/dataset/socios-brasil/empresas/data/?cnpj=${cnpj}`;
+  const companyEmployeeURL = `https://api.brasil.io/v1/dataset/socios-brasil/socios/data/?cnpj=${cnpj}`;
 
-  const CompanyDataResponse = await axios.get(CompanyDataURL, {
+  //GET DATA FROM BRASIL.IO -----
+  const companyDataResponse = await axios.get(companyDataURL, {
     headers: {
       Authorization: process.env.BRASIL_IO_API_AUTH_TOKEN,
     },
   });
-  const EmployeeResponse = await axios.get(CompanyEmployeeURL, {
+  const employeeResponse = await axios.get(companyEmployeeURL, {
     headers: {
       Authorization: process.env.BRASIL_IO_API_AUTH_TOKEN,
     },
   });
 
-  if (!CompanyDataResponse.data.count || !EmployeeResponse.data.count) {
+  //CHECK IF AXIOS GOT A RESPONSE -----
+  if (!companyDataResponse.data.count || !employeeResponse.data.count) {
     return res.status(404).json({
       message: "404 Not Found",
     });
   }
 
-  const CompanyResult: CompanyProps = {
-    cnpj: CompanyDataResponse.data.results[0].cnpj,
-    razao_social: CompanyDataResponse.data.results[0].razao_social,
-    uf: CompanyDataResponse.data.results[0].uf,
+  //FIT VARIABLE TYPES -----
+  const companyResult: CompanyProps = {
+    cnpj: companyDataResponse.data.results[0].cnpj,
+    razao_social: companyDataResponse.data.results[0].razao_social,
+    uf: companyDataResponse.data.results[0].uf,
   };
-  const EmployeeResult: QSA = {
+  const employeeResult: QSA = {
     qsa: [],
   };
 
-  EmployeeResponse.data.results.forEach((result: any) => {
+  employeeResponse.data.results.forEach((result: any) => {
     const item = CreateEmployee();
 
     item.cnpj = result.cnpj;
@@ -52,24 +50,66 @@ export async function getRealTimeCompanyData(
     item.razao_social = result.razao_social;
     item.tipo_socio = result.tipo_socio;
 
-    EmployeeResult.qsa?.push(item);
+    employeeResult.qsa?.push(item);
   });
 
-  const FormattedJSONResult = {
-    ...CompanyResult,
-    ...EmployeeResult,
+  //UPDATE COMPANY DATA -----
+  const companyToBeUpdatedOnDatabase = await CompanyModel.findOneAndUpdate(
+    {
+      cnpj: `${companyResult.cnpj}`,
+    },
+    {
+      razao_social: `${companyResult.razao_social}`,
+      uf: `${companyResult.uf}`,
+    }
+  );
+
+  if (!companyToBeUpdatedOnDatabase) {
+    const newCompany = new CompanyModel({
+      cnpj: `${companyResult.cnpj}`,
+      razao_social: `${companyResult.razao_social}`,
+      uf: `${companyResult.uf}`,
+    });
+    newCompany.save();
+  }
+
+  //UPDATE EMPLOYEE DATA -----
+  for (let i = 0; i < employeeResult.qsa.length; i++) {
+    const employeeToBeUpdatedOnDatabase = await EmployeeModel.findOneAndUpdate(
+      {
+        cnpj: `${employeeResult.qsa[i].cnpj}`,
+        cpf_cnpj_socio: `${employeeResult.qsa[i].cpf_cnpj_socio}`
+      },
+      {
+        cpf_cnpj_socio: `${employeeResult.qsa[i].cpf_cnpj_socio}`,
+        nome_socio: `${employeeResult.qsa[i].nome_socio}`,
+        qualificacao_socio: `${employeeResult.qsa[i].qualificacao_socio}`,
+        razao_social: `${employeeResult.qsa[i].razao_social}`,
+        tipo_socio: `${employeeResult.qsa[i].tipo_socio}`,
+      }
+    );
+
+    if (!employeeToBeUpdatedOnDatabase) {
+      const newEmployee = new EmployeeModel({
+        cnpj: `${employeeResult.qsa[i].cnpj}`,
+        cpf_cnpj_socio: `${employeeResult.qsa[i].cpf_cnpj_socio}`,
+        nome_socio: `${employeeResult.qsa[i].nome_socio}`,
+        qualificacao_socio: `${employeeResult.qsa[i].qualificacao_socio}`,
+        razao_social: `${employeeResult.qsa[i].razao_social}`,
+        tipo_socio: `${employeeResult.qsa[i].tipo_socio}`,
+      });
+
+      newEmployee.save();
+    }
+  }
+
+  //FORMAT AND SHOW RESULTS -----
+  const formattedJSONResult = {
+    ...companyResult,
+    ...employeeResult,
   };
 
-  //MONGODB -----
-  // for (let i = 0; i < EmployeeResult.qsa.length; i++) {
-  //   const employee = await EmployeeModel.findOne({
-  //     cnpj: '14367312000142',
-  //   });
-
-  //   console.log(employee);
-  // }
-
   return res.status(200).json({
-    ...EmployeeResult,
+    ...formattedJSONResult,
   });
 }
