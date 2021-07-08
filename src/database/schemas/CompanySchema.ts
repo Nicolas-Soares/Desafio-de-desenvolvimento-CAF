@@ -1,21 +1,21 @@
-import mongoose from "mongoose";
-import { Company } from "../../interfaces/CompanyInterface";
+import { Schema, model, Model } from "mongoose";
+import { ICompany } from "../../interfaces/CompanyInterface";
 
-const companySchema = new mongoose.Schema<Company>({
-    cnpj: {
-        type: String,
-        required: true
-    },
-    razao_social: {
-        type: String,
-        required: true
-    },
-    uf: {
-        type: String,
-        required: true
-    }
-})
+const companySchema: Schema = new Schema({
+  cnpj: {
+    type: String,
+    required: true,
+  },
+  razao_social: {
+    type: String,
+    required: true,
+  },
+  uf: {
+    type: String,
+    required: true,
+  },
+});
 
-const Company = mongoose.model<Company>('Company', companySchema, 'Company')
+const CompanyModel: Model<ICompany> = model<ICompany>("Company",companySchema,"Company");
 
-export { Company, companySchema }
+export { CompanyModel, companySchema };
