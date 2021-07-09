@@ -10,6 +10,13 @@ export async function getRealTimeCompanyData(req: Request,res: Response): Promis
   const companyDataURL = `https://api.brasil.io/v1/dataset/socios-brasil/empresas/data/?cnpj=${cnpj}`;
   const companyEmployeeURL = `https://api.brasil.io/v1/dataset/socios-brasil/socios/data/?cnpj=${cnpj}`;
 
+  if (cnpj.length > 14 || cnpj.length < 14) {
+    return res.status(400).json({
+      error: '400 Bad Request',
+      message: 'Informed CNPJ is too long/short'
+    })
+  }
+
   //GET DATA FROM BRASIL.IO -----
   const companyDataResponse = await axios.get(companyDataURL, {
     headers: { Authorization: process.env.BRASIL_IO_API_AUTH_TOKEN },
@@ -20,7 +27,10 @@ export async function getRealTimeCompanyData(req: Request,res: Response): Promis
 
   //CHECK IF AXIOS GOT A RESPONSE -----
   if (!companyDataResponse.data.count || !employeeResponse.data.count) {
-    return res.status(404).json({ message: "404 Not Found" });
+    return res.status(404).json({
+      error: "404 Not Found",
+      message: 'No company with this CNPJ found on Brasil.io'
+    });
   }
 
   //FIT VARIABLE TYPES -----
