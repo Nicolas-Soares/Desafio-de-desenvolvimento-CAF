@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 export function connectToDatabase() {
-  mongoose.connect('mongodb://localhost:27017/CompanyData', {
+  mongoose.connect(`${process.env.MONGO_DATABASE_URL}`, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });
