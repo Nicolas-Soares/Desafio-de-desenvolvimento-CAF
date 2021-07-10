@@ -1,6 +1,6 @@
-import { EmployeeProps } from "../types/generalTypes";
+import { PartnerProps } from "../types/generalTypes";
 
-export function CreateEmployee(): EmployeeProps {
+export function CreatePartner(): PartnerProps {
   return {
     cpf_cnpj_socio: '',
     nome_socio: '',

@@ -1,6 +1,6 @@
 import express from "express";
-import { getRealTimeCompanyData } from "./services/realTimeService";
-import { getCachedCompanyData } from "./services/cachedService";
+import { getRealTimeCompanyData } from "./controllers/realTimeController";
+import { getCachedCompanyData } from "./controllers/cachedController";
 
 const routes = express.Router();
 
